@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace muqsit\asynciterator\util;
 
 use Closure;
+use Generator;
 use pocketmine\timings\TimingsHandler;
+use SOFe\AwaitGenerator\Await;
 
 /**
  * @template T
@@ -33,5 +35,17 @@ final class KeyValueTimedClosure{
 		$return = ($this->closure)($key, $value);
 		$this->timings->stopTiming();
 		return $return;
+	}
+
+	public function callAsync(mixed $key, mixed $value) : Generator
+	{
+		return Await::promise(function($resolve) use($key, $value){
+			Await::f2c(function() use($key, $value){
+				$this->timings->startTiming();
+				$return = yield from ($this->closure)($key, $value);
+				$this->timings->stopTiming();
+				return $return;
+			}, $resolve);
+		});
 	}
 }
